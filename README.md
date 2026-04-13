@@ -144,7 +144,7 @@ Set-Acl $path $acl
 Add to agent config:
 
 ```
-UserParameter=veeam.info[*],powershell -NoProfile -ExecutionPolicy Bypass -File "C:\Program Files\Zabbix Agent\scripts\zabbix_vbr_jobs.ps1" -Operation "$1"
+UserParameter=veeam.info[*],powershell -NoProfile -ExecutionPolicy Bypass -File "C:\Program Files\Zabbix Agent\scripts\zabbix_vbr_jobs.ps1" -Config "C:\Program Files\Zabbix Agent\scripts\zabbix_vbr.conf" -Operation "$1"
 ```
 
 ### Supported keys
