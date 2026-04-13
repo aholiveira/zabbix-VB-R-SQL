@@ -244,6 +244,7 @@ Automatically discovers:
   - aholiveira  
   - xtonousou  
 
+- PostgreSQL support was implemented by adapting the existing SQL Server logic in this project and using community PostgreSQL-related scripts from aaeMotoko and smolkik-code as reference material. The final PostgreSQL (ODBC) implementation was generated with AI-assisted development based on those inputs.
 ---
 
 ## Version
