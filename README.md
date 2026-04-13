@@ -31,7 +31,7 @@ The script outputs JSON for discovery and dependent items.
   - SQL Server (integrated or SQL authentication)
   - PostgreSQL (ODBC driver required)
 - Automatic Low-Level Discovery (LLD):
-  - Jobs (all types)
+  - Jobs
   - Repositories
 - Secure credential handling via external config file
 - No hardcoded credentials in script
