@@ -238,13 +238,14 @@ Automatically discovers:
 ---
 
 ## Credits
-- Original author: Romainsi  
-  https://github.com/romainsi  
-- Contributions:
-  - aholiveira  
-  - xtonousou  
+- Original author: [romainsi](https://github.com/romainsi)
 
-- PostgreSQL support was implemented by adapting the existing SQL Server logic in this project and using community PostgreSQL-related scripts from aaeMotoko and smolkik-code as reference material. The final PostgreSQL (ODBC) implementation was generated with AI-assisted development based on those inputs.
+- Contributors:
+  - [aholiveira](https://github.com/aholiveira)
+  - [xtonousou](https://github.com/xtonousou)
+
+- Acknowledgements:
+  - PostgreSQL support was added by adapting the existing SQL Server logic and using community PostgreSQL-related scripts from [aaeMotoko](https://github.com/aaeMotoko) and [smolkik-code](https://github.com/smolkik-code) as reference material. Final implementation (ODBC) was AI-assisted.
 ---
 
 ## Version
