@@ -590,6 +590,7 @@ zabbix_export:
               key: 'veeam.RepoInfo.Info[''{#REPONAME}'']'
               delay: '0'
               history: '0'
+              value_type: TEXT
               trends: '0'
               preprocessing:
                 - type: JSONPATH
