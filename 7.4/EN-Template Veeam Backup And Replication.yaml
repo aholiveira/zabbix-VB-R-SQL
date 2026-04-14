@@ -8,7 +8,7 @@ zabbix_export:
       template: 'Veeam Backup And Replication'
       name: 'Veeam Backup And Replication'
       description: |
-        Version: 3.0
+        Version: 3.1
         Monitor Veeam Backup and Replication job and repository information
         It uses SQL queries to the Veeam database to obtain the information
         To use the template:
@@ -32,6 +32,9 @@ zabbix_export:
         Contributions:
         aholiveira https://github.com/aholiveira
         xtonousou https://github.com/xtonousou
+      vendor:
+        name: romainsi
+        version: '3.1'
       groups:
         - name: Templates/Applications
       items:
@@ -105,6 +108,19 @@ zabbix_export:
           name: 'Veeam Jobs Discovery'
           type: DEPENDENT
           key: veeam.Discovery.Jobs
+          filter:
+            evaltype: AND
+            conditions:
+              - macro: '{#JOBNAME}'
+                value: '{$VEEAM.JOB.NAME.MATCHES}'
+              - macro: '{#JOBNAME}'
+                value: '{$VEEAM.JOB.NAME.NOT_MATCHES}'
+                operator: NOT_MATCHES_REGEX
+              - macro: '{#JOBTYPEID}'
+                value: '{$VEEAM.JOB.TYPE.MATCHES}'
+              - macro: '{#JOBTYPEID}'
+                value: '{$VEEAM.JOB.TYPE.NOT_MATCHES}'
+                operator: NOT_MATCHES_REGEX
           lifetime: 1h
           enabled_lifetime_type: DISABLE_NEVER
           item_prototypes:
@@ -516,6 +532,19 @@ zabbix_export:
           name: 'Veeam Repository'
           type: DEPENDENT
           key: Veeam.Discovery.Repo
+          filter:
+            evaltype: AND
+            conditions:
+              - macro: '{#REPONAME}'
+                value: '{$VEEAM.REPOSITORIES.NAME.MATCHES}'
+              - macro: '{#REPONAME}'
+                value: '{$VEEAM.REPOSITORIES.NAME.NOT_MATCHES}'
+                operator: NOT_MATCHES_REGEX
+              - macro: '{#REPOTYPE}'
+                value: '{$VEEAM.REPOSITORIES.TYPE.MATCHES}'
+              - macro: '{#REPOTYPE}'
+                value: '{$VEEAM.REPOSITORIES.TYPE.NOT_MATCHES}'
+                operator: NOT_MATCHES_REGEX
           enabled_lifetime_type: DISABLE_NEVER
           item_prototypes:
             - uuid: f7c95c54aadc4a53862a4de689b42cf9
@@ -635,6 +664,26 @@ zabbix_export:
                       value: 'Veeam Backup and Replication'
                     - tag: Application
                       value: 'Veeam Repository'
+            - uuid: a1b2c3d4e5f64a7b8c9d0e1f2a3b4c5d
+              name: 'Repository type {#REPONAME}'
+              type: DEPENDENT
+              key: 'veeam.RepoInfo.Type[''{#REPONAME}'']'
+              history: 30d
+              valuemap:
+                name: VbrRepositoryType
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.REPOTYPE
+              master_item:
+                key: 'veeam.RepoInfo.Info[''{#REPONAME}'']'
+              tags:
+                - tag: Application
+                  value: 'Veeam Backup and Replication'
+                - tag: Application
+                  value: 'Veeam Repository'
+                - tag: Repository
+                  value: '{#REPONAME}'
             - uuid: b8c2ffaefce140e894d405542afc610e
               name: 'Used space {#REPONAME}'
               type: CALCULATED
@@ -663,6 +712,8 @@ zabbix_export:
           lld_macro_paths:
             - lld_macro: '{#REPONAME}'
               path: $.REPONAME
+            - lld_macro: '{#REPOTYPE}'
+              path: $.REPOTYPE
       tags:
         - tag: class
           value: application
@@ -671,6 +722,30 @@ zabbix_export:
         - tag: target
           value: veeam-backup-and-replication
       macros:
+        - macro: '{$VEEAM.JOB.NAME.MATCHES}'
+          value: '.*'
+          description: 'This macro is used in job discovery rule'
+        - macro: '{$VEEAM.JOB.NAME.NOT_MATCHES}'
+          value: CHANGE_IF_NEEDED
+          description: 'This macro is used in job discovery rule'
+        - macro: '{$VEEAM.JOB.TYPE.MATCHES}'
+          value: '.*'
+          description: 'This macro is used in job discovery rule'
+        - macro: '{$VEEAM.JOB.TYPE.NOT_MATCHES}'
+          value: CHANGE_IF_NEEDED
+          description: 'This macro is used in job discovery rule'
+        - macro: '{$VEEAM.REPOSITORIES.NAME.MATCHES}'
+          value: '.*'
+          description: 'This macro is used in repositories discovery rule.'
+        - macro: '{$VEEAM.REPOSITORIES.NAME.NOT_MATCHES}'
+          value: CHANGE_IF_NEEDED
+          description: 'This macro is used in repositories discovery rule.'
+        - macro: '{$VEEAM.REPOSITORIES.TYPE.MATCHES}'
+          value: '.*'
+          description: 'This macro is used in repositories discovery rule.'
+        - macro: '{$VEEAM.REPOSITORIES.TYPE.NOT_MATCHES}'
+          value: CHANGE_IF_NEEDED
+          description: 'This macro is used in repositories discovery rule.'
         - macro: '{$VEEAM_JOB_HOURS_WARN}'
           value: '8'
           description: 'Maximum number of hours that a backup job can run before triggering an alert'
@@ -716,6 +791,33 @@ zabbix_export:
               newvalue: Warning
             - value: '2'
               newvalue: Error
+        - uuid: 2169ef546b0b4ec0b6535d0aeda4ca6c
+          name: VbrRepositoryType
+          mappings:
+            - value: '0'
+              newvalue: 'Windows (Local/DAS)'
+            - value: '1'
+              newvalue: 'Linux (Local/DAS)'
+            - value: '3'
+              newvalue: 'SMB/CIFS Share'
+            - value: '4'
+              newvalue: 'Dell EMC Data Domain'
+            - value: '5'
+              newvalue: 'HPE StoreOnce'
+            - value: '6'
+              newvalue: ExaGrid
+            - value: '7'
+              newvalue: 'Quantum DXi'
+            - value: '8'
+              newvalue: 'Infinidat InfiniGuard'
+            - value: '9'
+              newvalue: 'NFS Share'
+            - value: '10'
+              newvalue: 'Fujitsu ETERNUS'
+            - value: '11'
+              newvalue: 'HPE StoreOnce Cloud Bank'
+            - value: '12'
+              newvalue: 'Hardened Repository'
         - uuid: 38e521dc4ad54ac18741ed55765f4f84
           name: veeamTypeMap
           mappings:
