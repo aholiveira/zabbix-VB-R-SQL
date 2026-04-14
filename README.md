@@ -1,76 +1,252 @@
 # VEEAM-B&R-SQL
 
-This template use SQL Query to discover VEEAM Backup jobs, Veeam BackupCopy, Veeam BackupSync, Veeam Tape Job, Veeam FileTape, Veeam Agent, Veeam Replication, All Repositories.
-Powershell get all informations via SQL and send it to zabbix server/proxy with json.
+## Contents
+- [Description](#description)
+- [Features](#features)
+- [Requirements](#requirements)
+- [Setup](#setup)
+- [Configuration File](#configuration-file)
+- [Zabbix Configuration](#zabbix-configuration)
+- [Items](#items)
+- [Discovery](#discovery)
+- [Triggers](#triggers)
 
-- Work with Veeam backup & replication V9 to V10 and V11 (actually ok on 11.0.1.1261)
-- Work with Zabbix 6.x
+---
 
-## Items
+## Description
+This template uses SQL queries to retrieve Veeam Backup & Replication job and repository data and sends it to Zabbix using a PowerShell script.
 
-- Total number of VEEAM jobs
-- Master Item for Veeam jobs and repository Informations
+The script supports both:
+- Microsoft SQL Server (native .NET provider)
+- PostgreSQL (via ODBC)
 
-## Triggers
+The script outputs JSON for discovery and dependent items.
 
-- [WARNING] => No data in RepoInfo
-- [WARNING] => No data on Jobs
+---
 
-## Discovery Jobs
+## Features
+- Supports Veeam Backup & Replication v11 → v13
+- Supports Zabbix 7.x
+- Multi-database support:
+  - SQL Server (integrated or SQL authentication)
+  - PostgreSQL (ODBC driver required)
+- Automatic Low-Level Discovery (LLD):
+  - Jobs
+  - Repositories
+- Secure credential handling via external config file
+- No hardcoded credentials in script
 
-### Items discovery Veeam Job, Replication, FileTape, Tape, Sync, Copy, Agent
+---
 
-- Result
-- Progress
-- Last end time
-- Last run time
-- Last job duration
-- If failed Job : Last Reason
-- If failed : Is retry ?
+## Requirements
+- Zabbix Agent or Zabbix Agent 2
+- PowerShell 5.1+
+- Network access to Veeam database
 
-### Items discovery Veeam Repository
+### For SQL Server
+- TCP/IP enabled
+- SQL authentication (optional)
 
-- Remaining space in repository
-- Total space in repository
-- Percent free space
-- Out of date
+### For PostgreSQL
+- PostgreSQL ODBC driver:
+  https://www.postgresql.org/ftp/odbc/versions/msi/
 
-### Triggers discovery Veeam jobs Backup, Copy, Tape, BackupSync
-
-- [HIGH] => Job has FAILED
-- [HIGH] => Job has FAILED (With Retry)
-- [AVERAGE] => Job has completed with warning
-- [AVERAGE] => Job has completed with warning (With Retry)
-- [HIGH] => Job is still running (8 hours)
-
-### Triggers discovery Veeam Repository
-
-- [HIGH] => Less than 20% remaining on the repository
-- [HIGH] => Information is out of date
+---
 
 ## Setup
 
-1. Install the Zabbix agent 2 on your host.
-2. Connect to the veeam sql server, adjust protocols for VEEAMSQL in "Sql Server Configuration Manager" for permit to connect with TCP/IP
-3. With SQL Server Management Studio : Create User/Pass with reader rights , permit to connect with local user in sql settings and specify the default database. With sqlcmd.exe (Change password "CHANGEME" with something more secure):
+### 1. Database Access
 
-    ```sql
-    USE [VeeamBackup]
-    CREATE LOGIN [zabbixveeam] WITH PASSWORD = N'CHANGEME', CHECK_POLICY = OFF, CHECK_EXPIRATION = OFF;
-    CREATE USER [zabbixveeam] FOR LOGIN [zabbixveeam];
-    EXEC sp_addrolemember 'db_datareader', 'zabbixveeam';
-    GO
-    ```
-
-4. In script, ajust variables line 73 to 78 to match your configuration
-5. Copy `zabbix_vbr_job.ps1` in the directory : `C:\Program Files\Zabbix Agent 2\scripts\` (create folder if not exist)
-6. Add `UserParameter=veeam.info[*],powershell -NoProfile -ExecutionPolicy Bypass -File "C:\Program Files\Zabbix Agent 2\scripts\zabbix_vbr_job.ps1" "$1"` in zabbix_agent2.conf  
-7. Import Template_Veeam_Backup_And_Replication.yaml file into Zabbix.
-8. Associate Template "VEEAM Backup and Replication" to the host.  
-NOTE: When importing the new template version on an existing installation please check all "Delete missing", except "Template linkage", to make sure the old items are deleted
-
-Ajust Zabbix Agent & Server/Proxy timeout for userparameter, you can use this powershell command to determine the execution time :
-
-```powershell
-(Measure-Command -Expression{ & "C:\Program Files\Zabbix Agent 2\scripts\zabbix_vbr_job.ps1" "StartJobs"}).TotalSeconds
+#### SQL Server
+```sql
+USE [VeeamBackup]
+CREATE LOGIN [zabbixveeam] WITH PASSWORD = N'CHANGEME', CHECK_POLICY = OFF, CHECK_EXPIRATION = OFF;
+CREATE USER [zabbixveeam] FOR LOGIN [zabbixveeam];
+EXEC sp_addrolemember 'db_datareader', 'zabbixveeam';
+GO
 ```
+
+#### PostgreSQL
+```sql
+CREATE USER zabbixveeam WITH PASSWORD 'CHANGEME';
+GRANT CONNECT ON DATABASE "VeeamBackup" TO zabbixveeam;
+GRANT USAGE ON SCHEMA public TO zabbixveeam;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO zabbixveeam;
+```
+
+---
+
+### 2. Script Deployment
+Copy script:
+```
+zabbix_vbr_jobs.ps1
+```
+to:
+```
+C:\Program Files\Zabbix Agent\scripts\
+```
+
+---
+
+### 3. Create Configuration File
+
+Create file:
+```
+zabbix_vbr.conf
+```
+
+Place it in the same directory as the script.
+
+---
+
+## Configuration File
+
+### SQL Server Example
+```ini
+SQLServer=PROD-INFRA\INFRA
+SQLDatabase=VeeamBackup
+SQLIntegratedSecurity=false
+SQLUsername=zabbixveeam
+SQLPassword=CHANGEME
+VeeamServer=VEEAM01
+DBProvider=SqlServer
+```
+
+### PostgreSQL Example
+```ini
+SQLServer=localhost
+SQLPort=5432
+SQLDatabase=VeeamBackup
+SQLIntegratedSecurity=false
+SQLUsername=postgres
+SQLPassword=CHANGEME
+VeeamServer=VEEAM01
+DBProvider=Postgres
+```
+
+---
+
+### Secure the file
+```powershell
+$path = "zabbix_vbr.conf"
+$acl = Get-Acl $path
+$acl.SetAccessRuleProtection($true,$false)
+$acl.SetAccessRule((New-Object System.Security.AccessControl.FileSystemAccessRule("NT SERVICE\ZabbixAgent","Read","Allow")))
+$acl.SetAccessRule((New-Object System.Security.AccessControl.FileSystemAccessRule("SYSTEM","FullControl","Allow")))
+$acl.SetAccessRule((New-Object System.Security.AccessControl.FileSystemAccessRule("BUILTIN\Administrators","FullControl","Allow")))
+Set-Acl $path $acl
+```
+
+---
+
+## Zabbix Configuration
+
+Add to agent config:
+
+```
+UserParameter=veeam.info[*],powershell -NoProfile -ExecutionPolicy Bypass -File "C:\Program Files\Zabbix Agent\scripts\zabbix_vbr_jobs.ps1" -Config "C:\Program Files\Zabbix Agent\scripts\zabbix_vbr.conf" -Operation "$1"
+```
+
+### Supported keys
+- veeam.info[RepoInfo]
+- veeam.info[JobsInfo]
+- veeam.info[TotalJob]
+
+---
+
+### Import Template
+- Import Template_Veeam_Backup_And_Replication.yaml
+- Link template to host
+
+---
+
+### Timeout tuning
+```powershell
+(Measure-Command { & "C:\Program Files\Zabbix Agent\scripts\zabbix_vbr_jobs.ps1" -Operation "JobsInfo" }).TotalSeconds
+```
+
+---
+
+## Items
+
+### Master Items
+- Veeam Job Info (JSON)
+- Veeam Repository Info (JSON)
+- Total number of jobs
+
+---
+
+## Discovery
+
+### Jobs Discovery
+Automatically discovers:
+- Backup jobs
+- Replication jobs
+- Tape jobs
+- Backup Copy jobs
+- Backup Sync jobs
+- Agent jobs
+- RMAN jobs
+
+### Job Item Prototypes
+- Result
+- Progress
+- Start / End time
+- Duration
+- Retry status
+- Failure reason
+- Size metrics
+- Speed
+
+---
+
+### Repository Discovery
+- Total space
+- Free space
+- Used space
+- Percent free
+- Out-of-date status
+
+---
+
+## Triggers
+
+### Global
+- No data in RepoInfo
+- No data in JobsInfo
+
+### Jobs
+- Job failed
+- Job failed (with retry)
+- Job warning
+- Job warning (with retry)
+- Job running too long
+
+### Repository
+- Low free space (default < 20%)
+- Repository out-of-date
+
+---
+
+## Notes
+- PostgreSQL support is implemented but not fully tested due to lack of a Veeam environment using PostgreSQL. Feedback and validation are welcome.
+- Script supports both SQL Server and PostgreSQL transparently
+- PostgreSQL requires ODBC driver
+- Config file is mandatory (no inline credentials)
+- JSON output is consumed by dependent items
+
+---
+
+## Credits
+- Original author: [romainsi](https://github.com/romainsi)
+
+- Contributors:
+  - [aholiveira](https://github.com/aholiveira)
+  - [xtonousou](https://github.com/xtonousou)
+
+- Acknowledgements:
+  - PostgreSQL support was added by adapting the existing SQL Server logic and using community PostgreSQL-related scripts from [aaeMotoko](https://github.com/aaeMotoko) and [smolkik-code](https://github.com/smolkik-code) as reference material. Final implementation (ODBC) was AI-assisted.
+---
+
+## Version
+3.0
