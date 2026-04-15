@@ -118,7 +118,7 @@
     Original author : Romainsi   https://github.com/romainsi
     Contributions   : aholiveira https://github.com/aholiveira
                       xtonousou  https://github.com/xtonousou
-    Version         : 3.0
+    Version         : 3.1
 
 .LINK
     https://github.com/romainsi/zabbix-VB-R-SQL
@@ -637,14 +637,14 @@ function Get-RepoInfo {
     # Quoting style differs: brackets vs. double-quotes.
     if ($Config['DBProvider'] -eq 'Postgres') {
         $repoQuery = @"
-SELECT name, total_space, free_space, is_unavailable, is_full
+SELECT name, total_space, free_space, is_unavailable, is_full, type
 FROM BackupRepositoriesView
 ORDER BY name
 "@
     }
     else {
         $repoQuery = @"
-SELECT [name], [total_space], [free_space], [is_unavailable], [is_full]
+SELECT [name], [total_space], [free_space], [is_unavailable], [is_full], [type]
 FROM [dbo].[BackupRepositoriesView]
 ORDER BY [name]
 "@
@@ -663,6 +663,7 @@ ORDER BY [name]
             REPOCAPACITY  = [int64]$repo.total_space
             REPOFREE      = [int64]$repo.free_space
             REPOOUTOFDATE = ($repo.is_unavailable -or $repo.is_full)
+            REPOTYPE      = [string]$repo.type
         }
     }
 
