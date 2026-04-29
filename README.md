@@ -103,7 +103,7 @@ Place it in the same directory as the script.
 
 ### SQL Server Example
 ```ini
-SQLServer=PROD-INFRA\INFRA
+SQLServer=SQLSERVER\INSTANCE
 SQLDatabase=VeeamBackup
 SQLIntegratedSecurity=false
 SQLUsername=zabbixveeam
@@ -249,4 +249,4 @@ Automatically discovers:
 ---
 
 ## Version
-3.0
+3.2
