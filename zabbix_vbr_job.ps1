@@ -19,12 +19,12 @@
     Blank lines are ignored. Example (SQL Server):
 
         # Veeam SQL Server connection settings
-        SQLServer=PROD-INFRA\INFRA
+        SQLServer=SQL-SERVER\INSTANCE
         SQLDatabase=VeeamBackup
         SQLIntegratedSecurity=false
         SQLUsername=veeam_db
         SQLPassword=S3cur3P@ssw0rd
-        VeeamServer=JCS12
+        VeeamServer=VEEAMSERVER
         DBProvider=SqlServer
 
     Example (PostgreSQL via ODBC):
@@ -36,7 +36,7 @@
         SQLIntegratedSecurity=false
         SQLUsername=postgres
         SQLPassword=S3cur3P@ssw0rd
-        VeeamServer=JCS12
+        VeeamServer=VEEAMSERVER
         DBProvider=Postgres
 
     DBProvider must be either SqlServer or Postgres.
