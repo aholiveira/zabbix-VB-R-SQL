@@ -8,7 +8,7 @@ zabbix_export:
       template: 'Veeam Backup And Replication'
       name: 'Veeam Backup And Replication'
       description: |
-        Version: 3.1
+        Version: 3.2
         Monitor Veeam Backup and Replication job and repository information
         It uses SQL queries to the Veeam database to obtain the information
         To use the template:
@@ -34,7 +34,7 @@ zabbix_export:
         xtonousou https://github.com/xtonousou
       vendor:
         name: romainsi
-        version: '3.1'
+        version: '3.2'
       groups:
         - name: Templates/Applications
       items:

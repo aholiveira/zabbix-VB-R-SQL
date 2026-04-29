@@ -19,12 +19,12 @@
     Blank lines are ignored. Example (SQL Server):
 
         # Veeam SQL Server connection settings
-        SQLServer=PROD-INFRA\INFRA
+        SQLServer=SQL-SERVER\INSTANCE
         SQLDatabase=VeeamBackup
         SQLIntegratedSecurity=false
         SQLUsername=veeam_db
         SQLPassword=S3cur3P@ssw0rd
-        VeeamServer=JCS12
+        VeeamServer=VEEAMSERVER
         DBProvider=SqlServer
 
     Example (PostgreSQL via ODBC):
@@ -36,7 +36,7 @@
         SQLIntegratedSecurity=false
         SQLUsername=postgres
         SQLPassword=S3cur3P@ssw0rd
-        VeeamServer=JCS12
+        VeeamServer=VEEAMSERVER
         DBProvider=Postgres
 
     DBProvider must be either SqlServer or Postgres.
@@ -118,7 +118,7 @@
     Original author : Romainsi   https://github.com/romainsi
     Contributions   : aholiveira https://github.com/aholiveira
                       xtonousou  https://github.com/xtonousou
-    Version         : 3.1
+    Version         : 3.2
 
 .LINK
     https://github.com/romainsi/zabbix-VB-R-SQL
@@ -609,6 +609,10 @@ ORDER BY creation_time DESC
                 $lastJobSession = $lastJobSessions | Sort-Object end_time -Descending | Select-Object -Last 1
             }
 
+            if ($null -eq $lastJobSession) {
+                Write-Debug "No sessions found for job: $($job.name)"
+                continue
+            }
             $sessionInfo = Get-SessionInfo -BackupSession $lastJobSession
             if ($null -ne $sessionInfo) {
                 $result += $sessionInfo
