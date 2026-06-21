@@ -8,33 +8,72 @@ zabbix_export:
       template: 'Veeam Backup And Replication'
       name: 'Veeam Backup And Replication'
       description: |
-        Version: 3.2
-        Surveille les informations sur les tâches et les dépôts de Veeam Backup and Replication
-        Utilise des requêtes SQL sur la base de données Veeam pour obtenir les informations
-        Pour utiliser le modèle :
-        1. Installez l'agent Zabbix ou l'agent Zabbix 2 sur votre hôte.
-        2. Connectez-vous au serveur SQL Veeam, ajustez les protocoles pour VEEAMSQL dans le « Gestionnaire de configuration SQL Server » pour autoriser la connexion via TCP/IP
-        3. Créez un utilisateur/mot de passe avec des droits de lecture, autorisez la connexion avec un utilisateur local dans les paramètres SQL et spécifiez la base de données par défaut, à l'aide de SQL Server Management Studio.
-           Vous pouvez également utiliser les commandes SQL suivantes, via sqlcmd.exe :
+        Version : 3.3
+        Surveille les informations relatives aux tâches et aux dépôts Veeam Backup & Replication.
+        Utilise des requêtes SQL sur la base de données Veeam ainsi qu'un script PowerShell pour collecter les informations.
+        Prend en charge :
+        - Microsoft SQL Server (fournisseur .NET natif)
+        - PostgreSQL (ODBC)
+
+        Pour utiliser ce modèle :
+
+        1. Installez l'agent Zabbix ou Zabbix Agent 2 sur l'hôte.
+
+        2. Créez un utilisateur de base de données avec un accès en lecture seule.
+
+        SQL Server :
         `USE [VeeamBackup]`
         `CREATE LOGIN [zabbixveeam] WITH PASSWORD = N'CHANGEME', CHECK_POLICY = OFF, CHECK_EXPIRATION = OFF;`
         `CREATE USER [zabbixveeam] FOR LOGIN [zabbixveeam];`
         `EXEC sp_addrolemember 'db_datareader', 'zabbixveeam';`
         `GO`
-        4. Dans le script, ajustez les variables aux lignes 73-78 selon votre configuration
-        5. Copiez `zabbix_vbr_job.ps1` dans le répertoire : `C:\Program Files\Zabbix Agent 2\scripts\` (créez le dossier s'il n'existe pas)
-        6. Ajoutez `UserParameter=veeam.info[*],powershell -NoProfile -ExecutionPolicy Bypass -File "C:\Program Files\Zabbix Agent 2\scripts\zabbix_vbr_job.ps1" "$1"` dans zabbix_agent2.conf  
-        7. Associez le modèle à l'hôte sur lequel Veeam Backup and Replication est installé
+
+        PostgreSQL :
+        `CREATE USER zabbixveeam WITH PASSWORD 'CHANGEME';`
+        `GRANT CONNECT ON DATABASE "VeeamBackup" TO zabbixveeam;`
+        `GRANT USAGE ON SCHEMA public TO zabbixveeam;`
+        `GRANT SELECT ON ALL TABLES IN SCHEMA public TO zabbixveeam;`
+
+        3. Copiez `zabbix_vbr_job.ps1` dans :
+        `C:\Program Files\Zabbix Agent\scripts\`
+
+        4. Créez le fichier `zabbix_vbr.conf` et placez-le dans le même répertoire que le script.
+
+        Exemple SQL Server :
+        SQLServer=SQLSERVER\INSTANCE
+        SQLDatabase=VeeamBackup
+        SQLIntegratedSecurity=false
+        SQLUsername=zabbixveeam
+        SQLPassword=CHANGEME
+        DBProvider=SqlServer
+
+        Exemple PostgreSQL :
+        SQLServer=localhost
+        SQLPort=5432
+        SQLDatabase=VeeamBackup
+        SQLIntegratedSecurity=false
+        SQLUsername=postgres
+        SQLPassword=CHANGEME
+        DBProvider=Postgres
+
+        5. Ajoutez le UserParameter suivant dans zabbix_agent.conf :
+        `UserParameter=veeam.info[*],powershell -NoProfile -ExecutionPolicy Bypass -File "C:\Program Files\Zabbix Agent\scripts\zabbix_vbr_job.ps1" -Config "C:\Program Files\Zabbix Agent\scripts\zabbix_vbr.conf" -Operation "$1"`
+
+        6. Importez `Template_Veeam_Backup_And_Replication.yaml`.
+
+        7. Associez le modèle à l'hôte.
+
+        Remarque : Si les règles de découverte expirent dans Zabbix, augmentez le paramètre Timeout dans le fichier de configuration de l'agent Zabbix à 30 secondes. La valeur Timeout par défaut de l'agent Zabbix est de 3 secondes, ce qui peut être insuffisant dans les environnements de grande taille.
         
         Créé par :
         Romainsi https://github.com/romainsi
-        
+
         Contributions :
         aholiveira https://github.com/aholiveira
         xtonousou https://github.com/xtonousou
       vendor:
         name: romainsi
-        version: '3.2'
+        version: '3.3'
       groups:
         - name: Templates/Applications
       items:
