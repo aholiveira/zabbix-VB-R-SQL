@@ -63,6 +63,8 @@ zabbix_export:
 
         7. Associez le modèle à l'hôte.
 
+        Remarque : Si les règles de découverte expirent dans Zabbix, augmentez le paramètre Timeout dans le fichier de configuration de l’agent Zabbix à 30 secondes. La valeur Timeout par défaut de l’agent Zabbix est de 3 secondes, ce qui peut être insuffisant dans les environnements de grande taille.
+
         Créé par :
         Romainsi https://github.com/romainsi
 
